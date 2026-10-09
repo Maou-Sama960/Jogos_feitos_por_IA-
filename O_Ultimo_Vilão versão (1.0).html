@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>O Último Vilão - RPG de Necromancia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #f3f4f6;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+        .font-cinzel {
+            font-family: 'Cinzel', serif;
+        }
+        .neon-border-blue {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5), inset 0 0 15px rgba(59, 130, 246, 0.3);
+            border: 2px solid #3b82f6;
+        }
+        .neon-text-blue {
+            text-shadow: 0 0 10px rgba(96, 165, 250, 0.8), 0 0 20px rgba(59, 130, 246, 0.6);
+        }
+        .neon-text-red {
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.8), 0 0 20px rgba(185, 28, 28, 0.6);
+        }
+        .btn-fantasy {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid #3b82f6;
+            transition: all 0.2s ease;
+        }
+        .btn-fantasy:hover {
+            background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.8);
+            transform: translateY(-2px);
+        }
+        .btn-fantasy:active {
+            transform: translateY(1px);
+        }
+        /* Custom Scrollbar for story/upgrade modal */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2563eb;
+            border-radius: 3px;
+        }
+        /* Pulse Animation */
+        @keyframes soulPulse {
+            0%, 100% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.05); opacity: 1; filter: drop-shadow(0 0 12px #3b82f6); }
+        }
+        .pulse-soul {
+            animation: soulPulse 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-white relative select-none">
+
+    <!-- App Container -->
+    <div id="game-container" class="relative w-full h-full max-w-[1280px] max-h-[720px] aspect-video bg-slate-900 overflow-hidden shadow-2xl rounded-none md:rounded-2xl border border-slate-800 flex flex-col justify-center items-center">
+
+        <!-- HTML5 Game Canvas -->
+        <canvas id="gameCanvas" class="w-full h-full bg-slate-950 block"></canvas>
+
+        <!-- Start Menu Overlay -->
+        <div id="start-screen" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-between p-6 z-30 transition-opacity duration-500">
+            
+            <!-- Logo Section matching the user's provided logo -->
+            <div class="flex flex-col items-center justify-center mt-2 pulse-soul">
+                <svg width="180" height="180" viewBox="0 0 200 200" class="drop-shadow-[0_0_20px_rgba(59,130,246,0.6)]">
+                    <!-- Outer Circle -->
+                    <circle cx="100" cy="100" r="90" fill="none" stroke="#2563eb" stroke-width="4" />
+                    <circle cx="100" cy="100" r="84" fill="#090d16" stroke="#60a5fa" stroke-width="1.5" />
+                    
+                    <!-- Hooded Reaper Shadow -->
+                    <path d="M 100 25 C 60 25 45 65 45 110 C 45 135 55 155 100 155 C 145 155 155 135 155 110 C 155 65 140 25 100 25 Z" fill="#0e1726" stroke="#1d4ed8" stroke-width="2"/>
+                    <!-- Hood Folds -->
+                    <path d="M 100 25 C 80 40 55 75 50 115 C 65 95 85 85 100 85 C 115 85 135 95 150 115 C 145 75 120 40 100 25 Z" fill="#1e293b"/>
+                    <path d="M 100 25 L 100 85" stroke="#3b82f6" stroke-width="1.5" opacity="0.5"/>
+
+                    <!-- Skull Head -->
+                    <path d="M 72 105 C 72 85 128 85 128 105 C 128 125 118 140 100 140 C 82 140 72 125 72 105 Z" fill="#e2e8f0"/>
+                    <!-- Eye Sockets (Glowing Blue) -->
+                    <ellipse cx="86" cy="106" rx="8" ry="10" fill="#090d16"/>
+                    <ellipse cx="114" cy="106" rx="8" ry="10" fill="#090d16"/>
+                    <circle cx="86" cy="106" r="3" fill="#60a5fa" class="animate-pulse"/>
+                    <circle cx="114" cy="106" r="3" fill="#60a5fa" class="animate-pulse"/>
+                    <!-- Nose cavity -->
+                    <polygon points="100,115 96,123 104,123" fill="#090d16"/>
+                    <!-- Teeth / Jaw lines -->
+                    <path d="M 85 132 L 85 138 M 92 132 L 92 140 M 100 132 L 100 140 M 108 132 L 108 140 M 115 132 L 115 138" stroke="#090d16" stroke-width="2"/>
+
+                    <!-- Outer Text Path ARC -->
+                    <path id="textPathTop" d="M 25 100 A 75 75 0 0 1 175 100" fill="none" />
+                    <path id="textPathBottom" d="M 175 105 A 75 75 0 0 1 25 105" fill="none" />
+                    <text font-family="Cinzel" font-weight="900" font-size="18" fill="#93c5fd" letter-spacing="3" text-anchor="middle">
+                        <textPath href="#textPathTop" startOffset="50%">O ÚLTIMO</textPath>
+                    </text>
+                    <text font-family="Cinzel" font-weight="900" font-size="20" fill="#93c5fd" letter-spacing="4" text-anchor="middle">
+                        <textPath href="#textPathBottom" startOffset="50%">VILÃO</textPath>
+                    </text>
+                </svg>
+                <h1 class="font-cinzel text-3xl md:text-4xl font-extrabold text-blue-400 neon-text-blue tracking-wider mt-1">O ÚLTIMO VILÃO</h1>
+                <p class="text-xs text-blue-300/80 tracking-widest uppercase">A Vingança do Necromante</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 w-full max-w-md my-4">
+                <button id="btn-start" class="btn-fantasy flex-1 py-3 px-6 rounded-xl font-cinzel font-bold text-lg text-white shadow-lg flex items-center justify-center gap-2 border-blue-500">
+                    <svg class="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"/></svg>
+                    INICIAR VINGANÇA
+                </button>
+                <button id="btn-lore" class="btn-fantasy py-3 px-6 rounded-xl font-cinzel font-semibold text-blue-200 hover:text-white flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                    HISTÓRIA
+                </button>
+            </div>
+
+            <!-- Audio toggle & Info -->
+            <div class="flex justify-between items-center w-full max-w-md text-xs text-slate-400">
+                <button id="btn-sound-toggle" class="flex items-center gap-1.5 hover:text-blue-400 transition-colors">
+                    <span id="sound-icon">🔊</span> Som: <span id="sound-status" class="text-blue-400 font-bold">LIGADO</span>
+                </button>
+                <span>Controles: WASD/Toque</span>
+            </div>
+        </div>
+
+        <!-- Lore Modal Overlay -->
+        <div id="lore-modal" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-md p-6 z-40 flex flex-col items-center justify-center">
+            <div class="max-w-xl w-full bg-slate-900/90 border border-blue-500/40 rounded-2xl p-6 shadow-2xl flex flex-col max-h-[85%] overflow-hidden">
+                <div class="flex justify-between items-center border-b border-blue-500/30 pb-3 mb-4">
+                    <h2 class="font-cinzel text-2xl text-blue-400 font-bold flex items-center gap-2">
+                        <span>🌑</span> A História de Kael
+                    </h2>
+                    <button id="btn-close-lore" class="text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+                </div>
+                <div class="space-y-3 text-slate-300 text-sm overflow-y-auto pr-2 leading-relaxed">
+                    <p class="italic text-blue-200">Há 20 anos, o reino de Eldoria era supostamente protegido por grandes heróis. Monstros eram derrotados, guerras terminavam e o povo acreditava viver em paz...</p>
+                    <p>Mas havia um segredo sombrio que ninguém conhecia: os chamados "heróis" eram corrompidos e cruéis.</p>
+                    <p><strong class="text-blue-400">Kael</strong> era um jovem e honrado guerreiro que acreditava na justiça. Ele lutou ao lado dos heróis e defendeu pequenas vilas. Até que descobriu a terrível verdade:</p>
+                    <p class="bg-slate-950 p-3 rounded-lg border-l-4 border-blue-500 italic">"Os reis e heróis usavam monstros para conquistar territórios. Vilas inteiras eram massacradas e seus habitantes eram rotulados como 'sacrifícios necessários' para a expansão do império."</p>
+                    <p>Quando Kael tentou revelar a traição ao povo, foi emboscado pelos próprios companheiros. Ele foi esfaqueado pelas costas e deixado para apodrecer nos abismos da morte.</p>
+                    <p><strong class="text-blue-300">Mas Kael não morreu.</strong> No limiar da escuridão, ele absorveu as almas abandonadas e despertou o poder ancestral da <span class="text-blue-400 font-bold">Necromancia</span>.</p>
+                    <p class="text-blue-300 font-semibold text-center border-t border-blue-500/30 pt-3">Anos depois, Kael retorna. Ele não veio para salvar Eldoria. Ele veio para destruí-la!</p>
+                </div>
+                <button id="btn-start-from-lore" class="btn-fantasy mt-4 py-2.5 rounded-xl font-cinzel font-bold text-blue-200 hover:text-white text-center">
+                    QUEIMAR ELDORIA
+                </button>
+            </div>
+        </div>
+
+        <!-- In-Game HUD Overlay -->
+        <div id="game-hud" class="hidden absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-4">
+            <!-- Top HUD Bar -->
+            <div class="flex justify-between items-start w-full">
+                <!-- Player HP & Soul Mana -->
+                <div class="flex flex-col gap-1.5 bg-slate-950/80 p-3 rounded-xl border border-slate-800 backdrop-blur pointer-events-auto min-w-[200px]">
+                    <div class="flex justify-between items-center text-xs font-cinzel font-bold text-blue-300 mb-0.5">
+                        <span>KAEL (NECROMANTE)</span>
+                        <span id="hud-hp-text" class="text-emerald-400">100/100</span>
+                    </div>
+                    <!-- HP Bar -->
+                    <div class="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+                        <div id="hud-hp-bar" class="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-200" style="width: 100%;"></div>
+                    </div>
+                    <!-- Souls / Currency Counter -->
+                    <div class="flex justify-between items-center text-xs text-slate-300 mt-1">
+                        <span class="flex items-center gap-1 font-semibold text-blue-400">
+                            <span class="text-blue-400">👻</span> Almas Coletadas: <strong id="hud-souls-count" class="text-white">0</strong>
+                        </span>
+                        <span class="flex items-center gap-1 text-slate-400">
+                            <span class="text-cyan-400">💀</span> Exército: <strong id="hud-minion-count" class="text-cyan-300">0/5</strong>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Stage Indicator & Objective -->
+                <div class="bg-slate-950/80 px-4 py-2 rounded-xl border border-blue-500/30 text-center backdrop-blur pointer-events-auto">
+                    <div id="hud-stage-title" class="font-cinzel text-sm font-bold text-blue-400">FASE 1: OS PORTÕES DE ELDORIA</div>
+                    <div id="hud-stage-objective" class="text-xs text-slate-300">Derrote os guardas e reanime o exército</div>
+                </div>
+            </div>
+
+            <!-- Boss HP Bar (Visible during boss battles) -->
+            <div id="boss-hp-container" class="hidden self-center w-full max-w-lg bg-slate-950/90 border border-red-500/50 p-2.5 rounded-xl backdrop-blur -mt-8 pointer-events-auto">
+                <div class="flex justify-between items-center text-xs font-cinzel font-bold text-red-400 mb-1">
+                    <span id="boss-name">SIR VALERIUS (HERÓI TRAIDOR)</span>
+                    <span id="boss-hp-text">1000/1000</span>
+                </div>
+                <div class="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-red-900">
+                    <div id="boss-hp-bar" class="h-full bg-gradient-to-r from-red-700 to-red-500 transition-all duration-150" style="width: 100%;"></div>
+                </div>
+            </div>
+
+            <!-- Bottom Action Bar & Skill Icons -->
+            <div class="flex justify-between items-end w-full">
+                <!-- Skill Cooldown Slots -->
+                <div class="flex gap-2 bg-slate-950/80 p-2 rounded-xl border border-slate-800 backdrop-blur pointer-events-auto">
+                    <!-- Skill 1 -->
+                    <button id="skill-1" class="relative w-12 h-12 rounded-lg bg-slate-900 border border-blue-500/50 flex flex-col items-center justify-center text-xs hover:border-blue-400 active:scale-95 transition">
+                        <span class="text-lg">🔮</span>
+                        <span class="text-[9px] text-blue-300 font-bold">Ataque (1)</span>
+                        <div id="cd-1" class="absolute inset-0 bg-slate-950/80 rounded-lg hidden flex items-center justify-center text-xs font-bold text-blue-400"></div>
+                    </button>
+                    <!-- Skill 2 -->
+                    <button id="skill-2" class="relative w-12 h-12 rounded-lg bg-slate-900 border border-cyan-500/50 flex flex-col items-center justify-center text-xs hover:border-cyan-400 active:scale-95 transition">
+                        <span class="text-lg">💀</span>
+                        <span class="text-[9px] text-cyan-300 font-bold">Reanimar (2)</span>
+                        <div id="cd-2" class="absolute inset-0 bg-slate-950/80 rounded-lg hidden flex items-center justify-center text-xs font-bold text-cyan-400"></div>
+                    </button>
+                    <!-- Skill 3 -->
+                    <button id="skill-3" class="relative w-12 h-12 rounded-lg bg-slate-900 border border-indigo-500/50 flex flex-col items-center justify-center text-xs hover:border-indigo-400 active:scale-95 transition">
+                        <span class="text-lg">💥</span>
+                        <span class="text-[9px] text-indigo-300 font-bold">Nova (3)</span>
+                        <div id="cd-3" class="absolute inset-0 bg-slate-950/80 rounded-lg hidden flex items-center justify-center text-xs font-bold text-indigo-400"></div>
+                    </button>
+                    <!-- Skill 4 -->
+                    <button id="skill-4" class="relative w-12 h-12 rounded-lg bg-slate-900 border border-teal-500/50 flex flex-col items-center justify-center text-xs hover:border-teal-400 active:scale-95 transition">
+                        <span class="text-lg">🩸</span>
+                        <span class="text-[9px] text-teal-300 font-bold">Dreno (4)</span>
+                        <div id="cd-4" class="absolute inset-0 bg-slate-950/80 rounded-lg hidden flex items-center justify-center text-xs font-bold text-teal-400"></div>
+                    </button>
+                </div>
+
+                <!-- Grimoire / Upgrades Button -->
+                <button id="btn-open-grimoire" class="pointer-events-auto bg-slate-900/90 border border-blue-500/60 hover:border-blue-400 px-3 py-2 rounded-xl text-xs font-cinzel font-bold text-blue-300 flex items-center gap-1.5 shadow-lg backdrop-blur">
+                    <span>📖</span> Grimório das Sombras
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Touch Virtual D-Pad Overlay -->
+        <div id="mobile-controls" class="hidden absolute inset-0 z-20 pointer-events-none flex justify-between items-end p-6">
+            <!-- Joystick Zone -->
+            <div id="joystick-zone" class="w-32 h-32 rounded-full bg-slate-950/40 border-2 border-blue-500/30 relative pointer-events-auto flex items-center justify-center">
+                <div id="joystick-knob" class="w-12 h-12 rounded-full bg-blue-600/80 border border-blue-300 shadow-md transform transition-transform"></div>
+            </div>
+        </div>
+
+        <!-- Grimoire Upgrade Screen -->
+        <div id="grimoire-modal" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md p-6 z-40 flex flex-col items-center justify-center">
+            <div class="max-w-md w-full bg-slate-900 border border-blue-500/50 rounded-2xl p-5 shadow-2xl flex flex-col">
+                <div class="flex justify-between items-center border-b border-blue-500/30 pb-3 mb-3">
+                    <h2 class="font-cinzel text-xl text-blue-400 font-bold flex items-center gap-2">
+                        <span>📖</span> Grimório Necromântico
+                    </h2>
+                    <button id="btn-close-grimoire" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+                </div>
+                <div class="text-xs text-slate-300 mb-4 flex justify-between items-center bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                    <span>Almas Disponíveis:</span>
+                    <strong id="grimoire-souls" class="text-blue-400 text-sm font-bold">0</strong>
+                </div>
+
+                <!-- Upgrades List -->
+                <div class="space-y-3 overflow-y-auto max-h-[300px] pr-1">
+                    <!-- Upgrade 1: Attack Damage -->
+                    <div class="flex justify-between items-center bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                        <div>
+                            <div class="text-xs font-bold text-blue-300">Poder Sombrio</div>
+                            <div class="text-[10px] text-slate-400">Aumenta dano dos projéteis (+5)</div>
+                        </div>
+                        <button id="upg-damage" class="btn-fantasy text-xs py-1.5 px-3 rounded-lg text-blue-200">
+                            Upgrade (<span id="cost-damage">15</span> 👻)
+                        </button>
+                    </div>
+
+                    <!-- Upgrade 2: Max Health -->
+                    <div class="flex justify-between items-center bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                        <div>
+                            <div class="text-xs font-bold text-emerald-300">Vitalidade das Sombras</div>
+                            <div class="text-[10px] text-slate-400">Aumenta vida máxima (+30)</div>
+                        </div>
+                        <button id="upg-hp" class="btn-fantasy text-xs py-1.5 px-3 rounded-lg text-emerald-200 border-emerald-500/50">
+                            Upgrade (<span id="cost-hp">20</span> 👻)
+                        </button>
+                    </div>
+
+                    <!-- Upgrade 3: Army Capacity -->
+                    <div class="flex justify-between items-center bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                        <div>
+                            <div class="text-xs font-bold text-cyan-300">Comando dos Mortos</div>
+                            <div class="text-[10px] text-slate-400">Aumenta limite de esqueletos (+2)</div>
+                        </div>
+                        <button id="upg-army" class="btn-fantasy text-xs py-1.5 px-3 rounded-lg text-cyan-200 border-cyan-500/50">
+                            Upgrade (<span id="cost-army">25</span> 👻)
+                        </button>
+                    </div>
+
+                    <!-- Upgrade 4: Cooldown Reduction -->
+                    <div class="flex justify-between items-center bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                        <div>
+                            <div class="text-xs font-bold text-indigo-300">Aceleração Necrótica</div>
+                            <div class="text-[10px] text-slate-400">Reduz recarga de habilidades (-10%)</div>
+                        </div>
+                        <button id="upg-cd" class="btn-fantasy text-xs py-1.5 px-3 rounded-lg text-indigo-200 border-indigo-500/50">
+                            Upgrade (<span id="cost-cd">30</span> 👻)
+                        </button>
+                    </div>
+                </div>
+
+                <button id="btn-resume-game" class="btn-fantasy mt-4 py-2 rounded-xl text-xs font-cinzel font-bold text-blue-200">
+                    CONTINUAR A VINGANÇA
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="gameover-modal" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-md p-6 z-50 flex flex-col items-center justify-center">
+            <div class="max-w-md w-full bg-slate-900 border border-red-600/60 rounded-2xl p-6 text-center shadow-2xl">
+                <h2 class="font-cinzel text-3xl font-bold text-red-500 neon-text-red mb-1">VOCÊ FOI DERROTADO</h2>
+                <p class="text-xs text-slate-400 mb-4">Os falsos heróis abafaram sua vingança... por enquanto.</p>
+                
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs space-y-2 text-left mb-5">
+                    <div class="flex justify-between"><span class="text-slate-400">Inimigos Derrotados:</span> <strong id="stat-kills" class="text-white">0</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Exército Reanimado:</span> <strong id="stat-summons" class="text-cyan-400">0</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Destruição de Eldoria:</span> <strong id="stat-destruction" class="text-red-400">0%</strong></div>
+                </div>
+
+                <button id="btn-restart" class="btn-fantasy w-full py-3 rounded-xl font-cinzel font-bold text-red-200 border-red-500/50 hover:border-red-400">
+                    RENASCER DAS SOMBRAS
+                </button>
+            </div>
+        </div>
+
+        <!-- Victory Modal -->
+        <div id="victory-modal" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-md p-6 z-50 flex flex-col items-center justify-center">
+            <div class="max-w-md w-full bg-slate-900 border border-blue-500/80 rounded-2xl p-6 text-center shadow-2xl">
+                <h2 class="font-cinzel text-3xl font-bold text-blue-400 neon-text-blue mb-1">A QUEDA DE ELDORIA</h2>
+                <p class="text-xs text-blue-200 mb-4">Kael destruiu os falsos heróis e reivindicou o trono do reino corrupto!</p>
+                
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs space-y-2 text-left mb-5">
+                    <div class="flex justify-between"><span class="text-slate-400">Total de Inimigos Massacrados:</span> <strong id="v-stat-kills" class="text-white">0</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Legião de Mortos-Vivos:</span> <strong id="v-stat-summons" class="text-cyan-400">0</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Nível do Grimório:</span> <strong id="v-stat-grimoire" class="text-blue-400">Máximo</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Status de Eldoria:</span> <strong class="text-emerald-400 font-bold">100% DESTRUÍDA E PURGADA</strong></div>
+                </div>
+
+                <button id="btn-play-again" class="btn-fantasy w-full py-3 rounded-xl font-cinzel font-bold text-blue-200 border-blue-500/50">
+                    JOGAR NOVAMENTE
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /* Sound Synthesizer using Web Audio API */
+        class SoundEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioCtx();
+                }
+            }
+
+            playBolt() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(120, this.ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.15);
+            }
+
+            playSummon() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+
+            playBlast() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(100, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.4);
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.4);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.4);
+            }
+
+            playHit() {
+                if (!this.enabled || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.1);
+            }
+        }
+
+        const sounds = new SoundEngine();
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const container = document.getElementById('game-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Game Constants & State
+        const STATE = {
+            MENU: 'MENU',
+            PLAYING: 'PLAYING',
+            PAUSED: 'PAUSED',
+            GAMEOVER: 'GAMEOVER',
+            VICTORY: 'VICTORY'
+        };
+
+        let gameState = STATE.MENU;
+
+        // Player Stats & Upgrades
+        let player = {
+            x: 0,
+            y: 0,
+            radius: 16,
+            speed: 3.5,
+            hp: 100,
+            maxHp: 100,
+            damage: 20,
+            maxMinions: 5,
+            cdMult: 1.0,
+            cd1: 0,
+            cd2: 0,
+            cd3: 0,
+            cd4: 0,
+            souls: 0,
+            totalKills: 0,
+            totalSummons: 0
+        };
+
+        // Entities Arrays
+        let minions = [];
+        let enemies = [];
+        let corpses = [];
+        let projectiles = [];
+        let particles = [];
+
+        // Stage Configuration
+        let currentStage = 1;
+        let stageProgress = 0;
+        let stageTargetKills = 15;
+        let bossActive = false;
+        let currentBoss = null;
+
+        const STAGE_CONFIG = [
+            { id: 1, title: 'FASE 1: OS PORTÕES DE ELDORIA', kills: 12, obj: 'Massacre os guardas de patrulha' },
+            { id: 2, title: 'FASE 2: DISTRITO DOS NOBRES', kills: 18, obj: 'Purgue os paladinos corruptos' },
+            { id: 3, title: 'FASE 3: A CIDADELA DOS FALSOS HERÓIS', kills: 20, boss: 'Sir Valerius', obj: 'Derrote Sir Valerius, o herói traidor!' },
+            { id: 4, title: 'FASE 4: O TRONO DE ELDORIA', kills: 25, boss: 'Rei Corrupto', obj: 'Destrua o Rei e aniquile o império!' }
+        ];
+
+        /* Input Controls Setup */
+        const keys = {};
+        const mouse = { x: 0, y: 0, down: false };
+
+        window.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; });
+        window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('mousedown', () => {
+            mouse.down = true;
+            if (gameState === STATE.PLAYING) castSkill1();
+        });
+        canvas.addEventListener('mouseup', () => { mouse.down = false; });
+
+        // Touch Virtual Joystick Controls
+        let touchStart = null;
+        let touchMove = null;
+        const joystickZone = document.getElementById('joystick-zone');
+        const joystickKnob = document.getElementById('joystick-knob');
+
+        window.addEventListener('touchstart', e => {
+            if (e.touches.length > 0) {
+                const t = e.touches[0];
+                const rect = joystickZone.getBoundingClientRect();
+                if (t.clientX >= rect.left && t.clientX <= rect.right && t.clientY >= rect.top && t.clientY <= rect.bottom) {
+                    touchStart = { x: t.clientX, y: t.clientY };
+                } else if (gameState === STATE.PLAYING) {
+                    mouse.x = t.clientX - canvas.getBoundingClientRect().left;
+                    mouse.y = t.clientY - canvas.getBoundingClientRect().top;
+                    castSkill1();
+                }
+            }
+        });
+
+        window.addEventListener('touchmove', e => {
+            if (touchStart && e.touches.length > 0) {
+                const t = e.touches[0];
+                touchMove = { x: t.clientX - touchStart.x, y: t.clientY - touchStart.y };
+                const dist = Math.min(Math.hypot(touchMove.x, touchMove.y), 40);
+                const angle = Math.atan2(touchMove.y, touchMove.x);
+                const knobX = Math.cos(angle) * dist;
+                const knobY = Math.sin(angle) * dist;
+                joystickKnob.style.transform = `translate(${knobX}px, ${knobY}px)`;
+            }
+        });
+
+        window.addEventListener('touchend', () => {
+            touchStart = null;
+            touchMove = null;
+            joystickKnob.style.transform = `translate(0px, 0px)`;
+        });
+
+        function castSkill1() {
+            if (player.cd1 > 0) return;
+            player.cd1 = 15 * player.cdMult; // ~0.25s
+            sounds.playBolt();
+
+            // Fire towards mouse or direction
+            let dx = mouse.x - player.x;
+            let dy = mouse.y - player.y;
+            let dist = Math.hypot(dx, dy) || 1;
+            
+            projectiles.push({
+                x: player.x,
+                y: player.y,
+                vx: (dx / dist) * 9,
+                vy: (dy / dist) * 9,
+                radius: 6,
+                damage: player.damage,
+                isPlayer: true,
+                color: '#60a5fa',
+                life: 60
+            });
+        }
+
+        function castSkill2() { // Reanimar Mortos
+            if (player.cd2 > 0) return;
+            if (corpses.length === 0) return;
+
+            sounds.playSummon();
+            player.cd2 = 180 * player.cdMult; // 3s
+
+            let reanimated = 0;
+            for (let i = corpses.length - 1; i >= 0; i--) {
+                if (minions.length >= player.maxMinions) break;
+                let c = corpses[i];
+                minions.push({
+                    x: c.x,
+                    y: c.y,
+                    radius: 12,
+                    speed: 2.8,
+                    hp: 45,
+                    maxHp: 45,
+                    damage: 12,
+                    target: null
+                });
+                // Soul burst effect
+                createParticles(c.x, c.y, '#38bdf8', 12);
+                corpses.splice(i, 1);
+                reanimated++;
+                player.totalSummons++;
+            }
+            updateHUD();
+        }
+
+        function castSkill3() { // Explosão Necrótica (AOE Nova)
+            if (player.cd3 > 0) return;
+            sounds.playBlast();
+            player.cd3 = 240 * player.cdMult; // 4s
+
+            createParticles(player.x, player.y, '#818cf8', 35);
+
+            enemies.forEach(e => {
+                let dist = Math.hypot(e.x - player.x, e.y - player.y);
+                if (dist < 120) {
+                    e.hp -= player.damage * 2.2;
+                    // Knockback
+                    let angle = Math.atan2(e.y - player.y, e.x - player.x);
+                    e.x += Math.cos(angle) * 35;
+                    e.y += Math.sin(angle) * 35;
+                    sounds.playHit();
+                }
+            });
+        }
+
+        function castSkill4() { // Dreno de Almas
+            if (player.cd4 > 0) return;
+            sounds.playBlast();
+            player.cd4 = 480 * player.cdMult; // 8s
+
+            let healed = 0;
+            enemies.forEach(e => {
+                let dist = Math.hypot(e.x - player.x, e.y - player.y);
+                if (dist < 160) {
+                    e.hp -= player.damage * 1.5;
+                    healed += 15;
+                    // Particle drain line
+                    createParticles(e.x, e.y, '#2dd4bf', 8);
+                }
+            });
+            player.hp = Math.min(player.maxHp, player.hp + healed);
+            updateHUD();
+        }
+
+        /* Keyboard Hotkeys for Skills */
+        window.addEventListener('keydown', e => {
+            if (gameState !== STATE.PLAYING) return;
+            if (e.key === '1') castSkill1();
+            if (e.key === '2') castSkill2();
+            if (e.key === '3') castSkill3();
+            if (e.key === '4') castSkill4();
+        });
+
+        // UI Buttons Skill Listeners
+        document.getElementById('skill-1').onclick = castSkill1;
+        document.getElementById('skill-2').onclick = castSkill2;
+        document.getElementById('skill-3').onclick = castSkill3;
+        document.getElementById('skill-4').onclick = castSkill4;
+
+        function createParticles(x, y, color, count = 8) {
+            for (let i = 0; i < count; i++) {
+                let angle = Math.random() * Math.PI * 2;
+                let speed = Math.random() * 3 + 1;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: Math.random() * 3 + 1,
+                    color: color,
+                    alpha: 1.0,
+                    life: Math.random() * 20 + 20
+                });
+            }
+        }
+
+        function spawnEnemy() {
+            if (bossActive) return;
+
+            // Spawn at canvas edge
+            let x, y;
+            if (Math.random() < 0.5) {
+                x = Math.random() < 0.5 ? -20 : canvas.width + 20;
+                y = Math.random() * canvas.height;
+            } else {
+                x = Math.random() * canvas.width;
+                y = Math.random() < 0.5 ? -20 : canvas.height + 20;
+            }
+
+            let type = Math.random();
+            let enemy = {
+                x: x,
+                y: y,
+                radius: 14,
+                speed: 1.8,
+                hp: 40 + currentStage * 10,
+                maxHp: 40 + currentStage * 10,
+                damage: 8 + currentStage * 2,
+                color: '#f87171',
+                type: 'guard'
+            };
+
+            if (type > 0.6 && currentStage >= 2) {
+                enemy.type = 'paladin';
+                enemy.radius = 18;
+                enemy.hp = 90 + currentStage * 15;
+                enemy.speed = 1.2;
+                enemy.color = '#fbbf24'; // Golden corrupt armor
+            }
+
+            enemies.push(enemy);
+        }
+
+        function spawnBoss(name) {
+            bossActive = true;
+            document.getElementById('boss-hp-container').classList.remove('hidden');
+            document.getElementById('boss-name').innerText = name.toUpperCase();
+
+            currentBoss = {
+                x: canvas.width / 2,
+                y: 80,
+                radius: 28,
+                speed: 1.5,
+                hp: 400 * currentStage,
+                maxHp: 400 * currentStage,
+                damage: 20,
+                name: name,
+                color: name.includes('Valerius') ? '#eab308' : '#ef4444',
+                shootCd: 0
+            };
+            enemies.push(currentBoss);
+            updateBossHP();
+        }
+
+        function updateGame() {
+            if (gameState !== STATE.PLAYING) return;
+
+            // Update Cooldowns
+            if (player.cd1 > 0) player.cd1--;
+            if (player.cd2 > 0) player.cd2--;
+            if (player.cd3 > 0) player.cd3--;
+            if (player.cd4 > 0) player.cd4--;
+            updateSkillCDUI();
+
+            // Player Movement (Keyboard WASD / Arrows)
+            let moveX = 0;
+            let moveY = 0;
+            if (keys['w'] || keys['arrowup']) moveY -= 1;
+            if (keys['s'] || keys['arrowdown']) moveY += 1;
+            if (keys['a'] || keys['arrowleft']) moveX -= 1;
+            if (keys['d'] || keys['arrowright']) moveX += 1;
+
+            // Add Touch joystick vector
+            if (touchMove) {
+                moveX += touchMove.x / 40;
+                moveY += touchMove.y / 40;
+            }
+
+            let len = Math.hypot(moveX, moveY);
+            if (len > 0) {
+                player.x += (moveX / len) * player.speed;
+                player.y += (moveY / len) * player.speed;
+            }
+
+            // Keep player inside canvas
+            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
+            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+
+            // Ambient trail particles for Kael
+            if (Math.random() < 0.4) {
+                createParticles(player.x, player.y + 10, '#3b82f6', 1);
+            }
+
+            // Update Minions (Skeleton AI)
+            minions.forEach((m, idx) => {
+                // Find closest enemy
+                let closest = null;
+                let minDist = Infinity;
+                enemies.forEach(e => {
+                    let d = Math.hypot(e.x - m.x, e.y - m.y);
+                    if (d < minDist) {
+                        minDist = d;
+                        closest = e;
+                    }
+                });
+
+                if (closest) {
+                    let angle = Math.atan2(closest.y - m.y, closest.x - m.x);
+                    m.x += Math.cos(angle) * m.speed;
+                    m.y += Math.sin(angle) * m.speed;
+
+                    // Attack enemy
+                    if (minDist < m.radius + closest.radius) {
+                        closest.hp -= 0.5;
+                        m.hp -= 0.2;
+                        sounds.playHit();
+                    }
+                } else {
+                    // Follow player if no enemies
+                    let d = Math.hypot(player.x - m.x, player.y - m.y);
+                    if (d > 50) {
+                        let angle = Math.atan2(player.y - m.y, player.x - m.x);
+                        m.x += Math.cos(angle) * m.speed;
+                        m.y += Math.sin(angle) * m.speed;
+                    }
+                }
+
+                if (m.hp <= 0) {
+                    createParticles(m.x, m.y, '#94a3b8', 6);
+                    minions.splice(idx, 1);
+                    updateHUD();
+                }
+            });
+
+            // Update Enemies AI
+            enemies.forEach((e, idx) => {
+                // Attack closest between player and minions
+                let target = player;
+                let targetDist = Math.hypot(player.x - e.x, player.y - e.y);
+
+                minions.forEach(m => {
+                    let d = Math.hypot(m.x - e.x, m.y - e.y);
+                    if (d < targetDist) {
+                        targetDist = d;
+                        target = m;
+                    }
+                });
+
+                let angle = Math.atan2(target.y - e.y, target.x - e.x);
+                e.x += Math.cos(angle) * e.speed;
+                e.y += Math.sin(angle) * e.speed;
+
+                // Melee Damage to Player
+                if (target === player && targetDist < e.radius + player.radius) {
+                    player.hp -= 0.3;
+                    updateHUD();
+                    if (player.hp <= 0) triggerGameOver();
+                }
+
+                // Boss Special Attack
+                if (e === currentBoss) {
+                    updateBossHP();
+                    e.shootCd++;
+                    if (e.shootCd > 90) {
+                        e.shootCd = 0;
+                        // Fire Boss projectile nova
+                        for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+                            projectiles.push({
+                                x: e.x,
+                                y: e.y,
+                                vx: Math.cos(a) * 4,
+                                vy: Math.sin(a) * 4,
+                                radius: 7,
+                                damage: 15,
+                                isPlayer: false,
+                                color: '#ef4444',
+                                life: 100
+                            });
+                        }
+                    }
+                }
+
+                // Enemy Death
+                if (e.hp <= 0) {
+                    sounds.playHit();
+                    createParticles(e.x, e.y, e.color, 15);
+
+                    // Leave corpse
+                    corpses.push({ x: e.x, y: e.y });
+
+                    if (e === currentBoss) {
+                        bossActive = false;
+                        currentBoss = null;
+                        document.getElementById('boss-hp-container').classList.add('hidden');
+                        nextStage();
+                    }
+
+                    enemies.splice(idx, 1);
+                    player.souls += 5 + currentStage * 2;
+                    player.totalKills++;
+                    stageProgress++;
+                    updateHUD();
+
+                    // Check stage progress
+                    const config = STAGE_CONFIG[currentStage - 1];
+                    if (!bossActive && stageProgress >= config.kills) {
+                        if (config.boss && !currentBoss) {
+                            spawnBoss(config.boss);
+                        } else if (!config.boss) {
+                            nextStage();
+                        }
+                    }
+                }
+            });
+
+            // Random Enemy Spawning
+            if (enemies.length < 5 + currentStage * 3 && Math.random() < 0.03 && !bossActive) {
+                spawnEnemy();
+            }
+
+            // Update Projectiles
+            projectiles.forEach((p, idx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+
+                // Particle trail
+                if (Math.random() < 0.5) createParticles(p.x, p.y, p.color, 1);
+
+                if (p.isPlayer) {
+                    enemies.forEach(e => {
+                        if (Math.hypot(e.x - p.x, e.y - p.y) < e.radius + p.radius) {
+                            e.hp -= p.damage;
+                            sounds.playHit();
+                            createParticles(p.x, p.y, '#60a5fa', 5);
+                            p.life = 0;
+                        }
+                    });
+                } else {
+                    if (Math.hypot(player.x - p.x, player.y - p.y) < player.radius + p.radius) {
+                        player.hp -= p.damage;
+                        updateHUD();
+                        p.life = 0;
+                        if (player.hp <= 0) triggerGameOver();
+                    }
+                }
+
+                if (p.life <= 0) projectiles.splice(idx, 1);
+            });
+
+            // Update Particles
+            particles.forEach((pt, idx) => {
+                pt.x += pt.vx;
+                pt.y += pt.vy;
+                pt.alpha -= 0.02;
+                if (pt.alpha <= 0) particles.splice(idx, 1);
+            });
+        }
+
+        function render() {
+            // Dark Fantasy Floor Background
+            ctx.fillStyle = '#0a0e1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid Lines / Dungeon Floor Tiles
+            ctx.strokeStyle = 'rgba(30, 58, 138, 0.15)';
+            ctx.lineWidth = 1;
+            const tileSize = 60;
+            for (let x = 0; x < canvas.width; x += tileSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += tileSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Draw Corpses (Skeleton Remains)
+            corpses.forEach(c => {
+                ctx.fillStyle = '#334155';
+                ctx.beginPath();
+                ctx.arc(c.x, c.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                // Glowing blue soul icon on corpse
+                ctx.fillStyle = '#38bdf8';
+                ctx.beginPath();
+                ctx.arc(c.x, c.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw Particles
+            particles.forEach(pt => {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, pt.alpha);
+                ctx.fillStyle = pt.color;
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Draw Minions (Skeletons)
+            minions.forEach(m => {
+                ctx.save();
+                // Glowing blue aura
+                ctx.shadowColor = '#38bdf8';
+                ctx.shadowBlur = 10;
+                ctx.fillStyle = '#cbd5e1';
+                ctx.beginPath();
+                ctx.arc(m.x, m.y, m.radius, 0, Math.PI * 2);
+                ctx.fill();
+                // Eyes
+                ctx.fillStyle = '#0284c7';
+                ctx.fillRect(m.x - 4, m.y - 3, 3, 3);
+                ctx.fillRect(m.x + 1, m.y - 3, 3, 3);
+                ctx.restore();
+            });
+
+            // Draw Enemies
+            enemies.forEach(e => {
+                ctx.save();
+                ctx.shadowColor = e.color;
+                ctx.shadowBlur = e === currentBoss ? 20 : 8;
+                ctx.fillStyle = e.color;
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // HP mini-bar for standard enemies
+                if (e !== currentBoss) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                    ctx.fillRect(e.x - 15, e.y - e.radius - 8, 30, 4);
+                    ctx.fillStyle = '#ef4444';
+                    ctx.fillRect(e.x - 15, e.y - e.radius - 8, (e.hp / e.maxHp) * 30, 4);
+                }
+                ctx.restore();
+            });
+
+            // Draw Projectiles
+            projectiles.forEach(p => {
+                ctx.save();
+                ctx.shadowColor = p.color;
+                ctx.shadowBlur = 12;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Draw Player (Kael - The Hooded Necromancer)
+            if (gameState === STATE.PLAYING) {
+                ctx.save();
+                ctx.shadowColor = '#3b82f6';
+                ctx.shadowBlur = 18;
+
+                // Hood Body
+                ctx.fillStyle = '#1e293b';
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#3b82f6';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Skull Face
+                ctx.fillStyle = '#f8fafc';
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.radius * 0.55, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Glowing Soul Eyes
+                ctx.fillStyle = '#2563eb';
+                ctx.beginPath();
+                ctx.arc(player.x - 3, player.y - 1, 2.5, 0, Math.PI * 2);
+                ctx.arc(player.x + 3, player.y - 1, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        function nextStage() {
+            currentStage++;
+            stageProgress = 0;
+
+            if (currentStage > STAGE_CONFIG.length) {
+                triggerVictory();
+                return;
+            }
+
+            const config = STAGE_CONFIG[currentStage - 1];
+            document.getElementById('hud-stage-title').innerText = config.title;
+            document.getElementById('hud-stage-objective').innerText = config.obj;
+
+            // Heal player slightly between stages
+            player.hp = Math.min(player.maxHp, player.hp + 40);
+            updateHUD();
+
+            // Auto open grimoire for upgrades between levels
+            openGrimoire();
+        }
+
+        function updateHUD() {
+            document.getElementById('hud-hp-text').innerText = `${Math.ceil(player.hp)}/${player.maxHp}`;
+            document.getElementById('hud-hp-bar').style.width = `${Math.max(0, (player.hp / player.maxHp) * 100)}%`;
+            document.getElementById('hud-souls-count').innerText = player.souls;
+            document.getElementById('hud-minion-count').innerText = `${minions.length}/${player.maxMinions}`;
+            document.getElementById('grimoire-souls').innerText = player.souls;
+        }
+
+        function updateBossHP() {
+            if (!currentBoss) return;
+            document.getElementById('boss-hp-text').innerText = `${Math.ceil(currentBoss.hp)}/${currentBoss.maxHp}`;
+            document.getElementById('boss-hp-bar').style.width = `${Math.max(0, (currentBoss.hp / currentBoss.maxHp) * 100)}%`;
+        }
+
+        function updateSkillCDUI() {
+            const cd1El = document.getElementById('cd-1');
+            const cd2El = document.getElementById('cd-2');
+            const cd3El = document.getElementById('cd-3');
+            const cd4El = document.getElementById('cd-4');
+
+            if (player.cd1 > 0) { cd1El.classList.remove('hidden'); cd1El.innerText = (player.cd1 / 60).toFixed(1); } else cd1El.classList.add('hidden');
+            if (player.cd2 > 0) { cd2El.classList.remove('hidden'); cd2El.innerText = (player.cd2 / 60).toFixed(1); } else cd2El.classList.add('hidden');
+            if (player.cd3 > 0) { cd3El.classList.remove('hidden'); cd3El.innerText = (player.cd3 / 60).toFixed(1); } else cd3El.classList.add('hidden');
+            if (player.cd4 > 0) { cd4El.classList.remove('hidden'); cd4El.innerText = (player.cd4 / 60).toFixed(1); } else cd4El.classList.add('hidden');
+        }
+
+        function initGame() {
+            sounds.init();
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2 + 100;
+            player.hp = player.maxHp;
+            player.souls = 0;
+            player.totalKills = 0;
+            player.totalSummons = 0;
+
+            minions = [];
+            enemies = [];
+            corpses = [];
+            projectiles = [];
+            particles = [];
+
+            currentStage = 1;
+            stageProgress = 0;
+            bossActive = false;
+
+            document.getElementById('start-screen').classList.add('opacity-0', 'pointer-events-none');
+            setTimeout(() => document.getElementById('start-screen').classList.add('hidden'), 500);
+
+            document.getElementById('game-hud').classList.remove('hidden');
+            if ('ontouchstart' in window) document.getElementById('mobile-controls').classList.remove('hidden');
+
+            const config = STAGE_CONFIG[0];
+            document.getElementById('hud-stage-title').innerText = config.title;
+            document.getElementById('hud-stage-objective').innerText = config.obj;
+
+            gameState = STATE.PLAYING;
+            updateHUD();
+        }
+
+        function openGrimoire() {
+            gameState = STATE.PAUSED;
+            document.getElementById('grimoire-modal').classList.remove('hidden');
+            updateHUD();
+        }
+
+        function closeGrimoire() {
+            document.getElementById('grimoire-modal').classList.add('hidden');
+            gameState = STATE.PLAYING;
+        }
+
+        // Upgrade Actions
+        let costDamage = 15, costHp = 20, costArmy = 25, costCd = 30;
+
+        document.getElementById('upg-damage').onclick = () => {
+            if (player.souls >= costDamage) {
+                player.souls -= costDamage;
+                player.damage += 8;
+                costDamage = Math.floor(costDamage * 1.5);
+                document.getElementById('cost-damage').innerText = costDamage;
+                updateHUD();
+            }
+        };
+
+        document.getElementById('upg-hp').onclick = () => {
+            if (player.souls >= costHp) {
+                player.souls -= costHp;
+                player.maxHp += 35;
+                player.hp += 35;
+                costHp = Math.floor(costHp * 1.5);
+                document.getElementById('cost-hp').innerText = costHp;
+                updateHUD();
+            }
+        };
+
+        document.getElementById('upg-army').onclick = () => {
+            if (player.souls >= costArmy) {
+                player.souls -= costArmy;
+                player.maxMinions += 2;
+                costArmy = Math.floor(costArmy * 1.6);
+                document.getElementById('cost-army').innerText = costArmy;
+                updateHUD();
+            }
+        };
+
+        document.getElementById('upg-cd').onclick = () => {
+            if (player.souls >= costCd && player.cdMult > 0.5) {
+                player.souls -= costCd;
+                player.cdMult -= 0.1;
+                costCd = Math.floor(costCd * 1.7);
+                document.getElementById('cost-cd').innerText = costCd;
+                updateHUD();
+            }
+        };
+
+        function triggerGameOver() {
+            gameState = STATE.GAMEOVER;
+            document.getElementById('stat-kills').innerText = player.totalKills;
+            document.getElementById('stat-summons').innerText = player.totalSummons;
+            document.getElementById('stat-destruction').innerText = `${Math.min(100, Math.floor((player.totalKills / 60) * 100))}%`;
+            document.getElementById('gameover-modal').classList.remove('hidden');
+        }
+
+        function triggerVictory() {
+            gameState = STATE.VICTORY;
+            document.getElementById('v-stat-kills').innerText = player.totalKills;
+            document.getElementById('v-stat-summons').innerText = player.totalSummons;
+            document.getElementById('victory-modal').classList.remove('hidden');
+        }
+
+        /* Event Listeners for UI buttons */
+        document.getElementById('btn-start').onclick = initGame;
+        document.getElementById('btn-start-from-lore').onclick = () => {
+            document.getElementById('lore-modal').classList.add('hidden');
+            initGame();
+        };
+
+        document.getElementById('btn-lore').onclick = () => {
+            document.getElementById('lore-modal').classList.remove('hidden');
+        };
+        document.getElementById('btn-close-lore').onclick = () => {
+            document.getElementById('lore-modal').classList.add('hidden');
+        };
+
+        document.getElementById('btn-open-grimoire').onclick = openGrimoire;
+        document.getElementById('btn-close-grimoire').onclick = closeGrimoire;
+        document.getElementById('btn-resume-game').onclick = closeGrimoire;
+
+        document.getElementById('btn-restart').onclick = () => {
+            document.getElementById('gameover-modal').classList.add('hidden');
+            initGame();
+        };
+        document.getElementById('btn-play-again').onclick = () => {
+            document.getElementById('victory-modal').classList.add('hidden');
+            initGame();
+        };
+
+        // Sound Toggle
+        document.getElementById('btn-sound-toggle').onclick = () => {
+            sounds.enabled = !sounds.enabled;
+            document.getElementById('sound-status').innerText = sounds.enabled ? 'LIGADO' : 'DESLIGADO';
+        };
+
+        function gameLoop() {
+            updateGame();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.onload = () => {
+            resizeCanvas();
+            requestAnimationFrame(gameLoop);
+        };
+    </script>
+</body>
+</html>

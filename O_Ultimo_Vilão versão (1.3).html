@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>O Último Vilão - RPG de Necromancia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+        body { font-family: 'Inter', sans-serif; background-color: #030712; color: #f3f4f6; overflow: hidden; margin: 0; padding: 0; width: 100vw; height: 100vh; }
+        .font-cinzel { font-family: 'Cinzel', serif; }
+        .btn-fantasy { background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); border: 1px solid #3b82f6; transition: all 0.2s ease; }
+        .btn-fantasy:hover { background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%); box-shadow: 0 0 15px rgba(59, 130, 246, 0.8); transform: translateY(-2px); }
+        .btn-fantasy:active { transform: translateY(1px); }
+        .skill-btn { position: relative; width: 44px; height: 44px; border-radius: 0.5rem; background-color: #0f172a; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: all 0.1s; }
+        .skill-btn:active { transform: scale(0.95); }
+        .locked-skill { opacity: 0.4; filter: grayscale(100%); pointer-events: none; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #090d16; }
+        ::-webkit-scrollbar-thumb { background: #2563eb; border-radius: 3px; }
+        @keyframes soulPulse { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.05); opacity: 1; filter: drop-shadow(0 0 12px #3b82f6); } }
+        .pulse-soul { animation: soulPulse 3s infinite ease-in-out; }
+        @keyframes bannerSlide { 0% { transform: translateY(-100%); opacity: 0; } 15% { transform: translateY(0); opacity: 1; } 85% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(-100%); opacity: 0; } }
+        .stage-banner-anim { animation: bannerSlide 3.5s ease-in-out forwards; }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-white relative select-none">
+
+    <div id="game-container" class="relative w-full h-full max-w-[1280px] max-h-[720px] aspect-video bg-slate-900 overflow-hidden shadow-2xl md:rounded-2xl border border-slate-800 flex flex-col justify-center items-center">
+        <canvas id="gameCanvas" class="w-full h-full bg-slate-950 block"></canvas>
+
+        <div id="stage-banner" class="hidden absolute top-12 z-30 pointer-events-none flex flex-col items-center justify-center stage-banner-anim">
+            <div class="bg-slate-950/90 border-2 border-blue-500/80 px-8 py-3 rounded-2xl shadow-[0_0_25px_rgba(59,130,246,0.5)] backdrop-blur-md text-center">
+                <h2 id="banner-title" class="font-cinzel text-2xl md:text-3xl font-extrabold text-blue-400">FASE 1</h2>
+                <p id="banner-desc" class="text-xs md:text-sm text-blue-200 mt-0.5 tracking-wider font-semibold">Massacre as patrulhas imperiais</p>
+            </div>
+        </div>
+
+        <!-- Menu Inicial -->
+        <div id="start-screen" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-center p-6 z-30 transition-opacity duration-500">
+            <div class="flex flex-col items-center justify-center pulse-soul mb-8">
+                <h1 class="font-cinzel text-4xl md:text-6xl font-extrabold text-blue-400 tracking-wider text-center drop-shadow-[0_0_15px_rgba(59,130,246,0.8)]">O ÚLTIMO VILÃO</h1>
+                <p class="text-sm md:text-base text-blue-300/80 tracking-widest uppercase mt-2">A Ascensão do Necromante</p>
+            </div>
+            <button id="btn-start" class="btn-fantasy py-4 px-10 rounded-xl font-cinzel font-bold text-xl text-white shadow-[0_0_20px_rgba(59,130,246,0.4)] mb-4">INICIAR VINGANÇA</button>
+            <p class="text-xs text-slate-400 mt-4">Controles: WASD para Mover | Mouse para Mirar | 1 a 7 para Habilidades</p>
+        </div>
+
+        <!-- HUD -->
+        <div id="game-hud" class="hidden absolute inset-0 pointer-events-none z-20 flex flex-col justify-between p-4">
+            <div class="flex justify-between items-start w-full">
+                <div class="flex flex-col gap-1.5 bg-slate-950/80 p-3 rounded-xl border border-slate-800 backdrop-blur pointer-events-auto min-w-[210px]">
+                    <div class="flex justify-between items-center text-xs font-cinzel font-bold text-blue-300 mb-0.5">
+                        <span>KAEL (NECROMANTE)</span>
+                        <span id="hud-hp-text" class="text-emerald-400">100/100</span>
+                    </div>
+                    <div class="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+                        <div id="hud-hp-bar" class="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-200" style="width: 100%;"></div>
+                    </div>
+                    <div class="flex justify-between items-center text-xs text-slate-300 mt-1">
+                        <span class="flex items-center gap-1 font-semibold text-blue-400">👻 <strong id="hud-souls-count" class="text-white">0</strong></span>
+                        <span class="flex items-center gap-1 text-slate-400">💀 <strong id="hud-minion-count" class="text-cyan-300">0/5</strong></span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-950/80 px-4 py-2.5 rounded-xl border border-blue-500/30 text-center backdrop-blur pointer-events-auto max-w-xs">
+                    <div id="hud-stage-title" class="font-cinzel text-xs md:text-sm font-bold text-blue-400 truncate">FASE 1</div>
+                    <div class="w-full bg-slate-900 rounded-full h-1.5 mt-1.5 overflow-hidden border border-slate-800">
+                        <div id="hud-stage-progress" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boss HP -->
+            <div id="boss-hp-container" class="hidden self-center w-full max-w-lg bg-slate-950/90 border border-red-500/50 p-2.5 rounded-xl backdrop-blur -mt-16 pointer-events-auto shadow-[0_0_20px_rgba(239,68,68,0.3)]">
+                <div class="flex justify-between items-center text-xs font-cinzel font-bold text-red-400 mb-1">
+                    <span id="boss-name">CHEFE</span>
+                    <span id="boss-hp-text">1000/1000</span>
+                </div>
+                <div class="w-full h-3 bg-slate-900 rounded-full overflow-hidden border border-red-900">
+                    <div id="boss-hp-bar" class="h-full bg-gradient-to-r from-red-700 via-red-500 to-amber-500 transition-all duration-150" style="width: 100%;"></div>
+                </div>
+            </div>
+
+            <!-- Action Bar Inferior -->
+            <div class="flex flex-col md:flex-row justify-between items-end w-full gap-2">
+                <!-- Spells & Summons -->
+                <div class="flex flex-wrap gap-3 pointer-events-auto">
+                    <!-- Magias -->
+                    <div class="bg-slate-950/80 p-2 rounded-xl border border-slate-800 backdrop-blur flex gap-1.5">
+                        <button id="btn-sk1" class="skill-btn border border-blue-500/50 hover:border-blue-400">
+                            <span class="absolute top-0.5 left-1 text-[9px] text-slate-400 font-bold">1</span>
+                            <span class="text-xl mt-1">🔮</span>
+                            <div id="cd-1" class="absolute inset-0 bg-slate-950/80 rounded-lg hidden flex items-center justify-center text-xs font-bold text-blue-400"></div>
+                        </button>
+                        <button id="btn-sk2" class="skill-btn border border-indigo-500/50 hover:border-indigo-400">
+                            <span class="absolute top-0.5 left-1 text-[9px] text-slate-400 font-bold">2</span>
+                            <span class="text-xl mt-1">💥</span>
+                            <div id="cd-2" class="absolute inset-0 bg-slate-950/80 rounded-lg hidden flex items-center justify-center text-xs font-bold text-indigo-400"></div>
+                        </button>
+                        <button id="btn-sk3" class="skill-btn border border-teal-500/50 hover:border-teal-400">
+                            <span class="absolute top-0.5 left-1 text-[9px] text-slate-400 font-bold">3</span>
+                            <span class="text-xl mt-1">🩸</span>
+                            <div id="cd-3" class="absolute inset-0 bg-slate-950/80 rounded-lg hidden flex items-center justify-center text-xs font-bold text-teal-400"></div>
+                        </button>
+                    </div>
+
+                    <!-- Invocações -->
+                    <div class="bg-slate-950/80 p-2 rounded-xl border border-cyan-800/50 backdrop-blur flex gap-1.5">
+                        <button id="btn-sum4" class="skill-btn border border-cyan-500/50 hover:border-cyan-400" title="Invocar Guerreiro">
+                            <span class="absolute top-0.5 left-1 text-[9px] text-slate-400 font-bold">4</span>
+                            <span class="text-xl mt-1">⚔️</span>
+                            <div id="cd-sum" class="absolute inset-0 bg-slate-950/80 rounded-lg hidden flex items-center justify-center text-xs font-bold text-cyan-400"></div>
+                        </button>
+                        <button id="btn-sum5" class="skill-btn border border-purple-500/50 hover:border-purple-400 locked-skill" title="Invocar Arqueiro">
+                            <span class="absolute top-0.5 left-1 text-[9px] text-slate-400 font-bold">5</span>
+                            <span class="text-xl mt-1">🏹</span>
+                        </button>
+                        <button id="btn-sum6" class="skill-btn border border-pink-500/50 hover:border-pink-400 locked-skill" title="Invocar Mago">
+                            <span class="absolute top-0.5 left-1 text-[9px] text-slate-400 font-bold">6</span>
+                            <span class="text-xl mt-1">🧙</span>
+                        </button>
+                        <button id="btn-sum7" class="skill-btn border border-red-500/50 hover:border-red-400 locked-skill" title="Invocar Berserker">
+                            <span class="absolute top-0.5 left-1 text-[9px] text-slate-400 font-bold">7</span>
+                            <span class="text-xl mt-1">🪓</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Menus -->
+                <div class="flex gap-2 pointer-events-auto">
+                    <button id="btn-open-status" class="bg-slate-900/90 border border-emerald-500/60 hover:border-emerald-400 px-3 py-2 rounded-xl text-xs font-cinzel font-bold text-emerald-300 shadow-lg backdrop-blur">📊 STATUS & HABILIDADES</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tela de Status -->
+        <div id="status-modal" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-md p-6 z-40 flex flex-col items-center justify-center">
+            <div class="max-w-2xl w-full bg-slate-900 border border-emerald-500/50 rounded-2xl p-5 shadow-2xl flex flex-col max-h-[90%] overflow-hidden">
+                <div class="flex justify-between items-center border-b border-emerald-500/30 pb-3 mb-3">
+                    <h2 class="font-cinzel text-xl text-emerald-400 font-bold">📊 Status & Evolução</h2>
+                    <button id="btn-close-status" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+                </div>
+
+                <div class="text-xs text-slate-300 mb-3 flex justify-between bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                    <span>Almas: <strong id="status-souls" class="text-blue-400 text-sm">0</strong></span>
+                    <span>Tropa Máx: <strong id="status-army-cap" class="text-cyan-400">5</strong></span>
+                    <span>Kills: <strong id="status-kills">0</strong></span>
+                </div>
+
+                <div class="space-y-2.5 overflow-y-auto pr-1 max-h-[350px]">
+                    <!-- Atributos base -->
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800 flex justify-between items-center">
+                            <div><div class="text-[11px] font-bold text-emerald-300">Vida Max</div></div>
+                            <button id="upg-hp" class="btn-fantasy text-[10px] py-1 px-2 rounded text-emerald-200">Upg (<span id="cost-hp">20</span>👻)</button>
+                        </div>
+                        <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800 flex justify-between items-center">
+                            <div><div class="text-[11px] font-bold text-cyan-300">Max Esqueletos</div></div>
+                            <button id="upg-army" class="btn-fantasy text-[10px] py-1 px-2 rounded text-cyan-200">Upg (<span id="cost-army">25</span>👻)</button>
+                        </div>
+                    </div>
+
+                    <!-- Skills -->
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-blue-500/30 flex justify-between items-center">
+                        <div>
+                            <div class="text-xs font-bold text-blue-300">🔮 Projétil Sombrio <span id="st-sk1-lvl" class="bg-blue-900/60 px-1 rounded text-[10px]">Lvl 1</span></div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">Aumenta dano base (+15)</div>
+                        </div>
+                        <button id="upg-sk1" class="btn-fantasy text-xs py-1 px-3 rounded-lg text-blue-200">Evoluir (<span id="cost-sk1">15</span>👻)</button>
+                    </div>
+
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-indigo-500/30 flex justify-between items-center">
+                        <div>
+                            <div class="text-xs font-bold text-indigo-300">💥 Nova Necrótica <span id="st-sk2-lvl" class="bg-indigo-900/60 px-1 rounded text-[10px]">Lvl 1</span></div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">Aumenta dano e empurrão</div>
+                        </div>
+                        <button id="upg-sk2" class="btn-fantasy text-xs py-1 px-3 rounded-lg text-indigo-200">Evoluir (<span id="cost-sk2">25</span>👻)</button>
+                    </div>
+
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-teal-500/30 flex justify-between items-center">
+                        <div>
+                            <div class="text-xs font-bold text-teal-300">🩸 Dreno Vital <span id="st-sk3-lvl" class="bg-teal-900/60 px-1 rounded text-[10px]">Lvl 1</span></div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">Aumenta cura ao atingir inimigos</div>
+                        </div>
+                        <button id="upg-sk3" class="btn-fantasy text-xs py-1 px-3 rounded-lg text-teal-200">Evoluir (<span id="cost-sk3">30</span>👻)</button>
+                    </div>
+
+                    <!-- Sistema de Reanimação -->
+                    <div class="bg-slate-950 p-3 rounded-xl border border-cyan-600/50">
+                        <div class="flex justify-between items-center mb-2 border-b border-slate-800 pb-2">
+                            <div>
+                                <div class="text-xs font-bold text-cyan-300">💀 Maestria de Reanimação <span id="st-sk-summon-lvl" class="bg-cyan-900/60 px-1 rounded text-[10px]">Lvl 1</span></div>
+                                <div class="text-[10px] text-slate-400">Desbloqueia novas classes (Arqueiro Lvl 2, Mago Lvl 3, Berserk Lvl 4)</div>
+                            </div>
+                            <button id="upg-summon" class="btn-fantasy text-xs py-1 px-3 rounded-lg text-cyan-200 border-cyan-500/50">Evoluir (<span id="cost-summon">25</span>👻)</button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-[10px]">
+                            <div class="bg-slate-900 p-1.5 rounded border border-slate-800 text-slate-300">⚔️ Guerreiro (Lvl 1)</div>
+                            <div id="badge-archer" class="bg-slate-900/40 p-1.5 rounded border border-slate-800/50 text-slate-500">🏹 Arqueiro (Req. Lvl 2)</div>
+                            <div id="badge-mage" class="bg-slate-900/40 p-1.5 rounded border border-slate-800/50 text-slate-500">🧙 Mago (Req. Lvl 3)</div>
+                            <div id="badge-berserk" class="bg-slate-900/40 p-1.5 rounded border border-slate-800/50 text-slate-500">🪓 Berserker (Req. Lvl 4)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fim de Jogo / Vitória -->
+        <div id="end-modal" class="hidden absolute inset-0 bg-slate-950/95 backdrop-blur-md p-6 z-50 flex flex-col items-center justify-center text-center">
+            <h2 id="end-title" class="font-cinzel text-4xl font-bold text-red-500 mb-2">DERROTADO</h2>
+            <p id="end-desc" class="text-slate-400 mb-6">A luz prevaleceu.</p>
+            <button id="btn-restart" class="btn-fantasy py-3 px-8 rounded-xl font-cinzel font-bold text-white">JOGAR NOVAMENTE</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            const container = document.getElementById('game-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const STATE = { MENU: 'MENU', PLAYING: 'PLAYING', PAUSED: 'PAUSED', END: 'END' };
+        let gameState = STATE.MENU;
+
+        let player = {
+            x: 0, y: 0, radius: 16, speed: 3.8, hp: 100, maxHp: 100, damage: 25,
+            maxMinions: 5, cd1: 0, cd2: 0, cd3: 0, sumCd: 0, souls: 0, kills: 0
+        };
+
+        // Níveis e Custos
+        let skills = {
+            sk1: { level: 1, cost: 15 }, // Projétil
+            sk2: { level: 1, cost: 25 }, // Nova
+            sk3: { level: 1, cost: 30 }, // Dreno
+            summon: { level: 1, cost: 25 } // Maestria (desbloqueia classes)
+        };
+        let costHp = 20, costArmy = 25;
+
+        // Classes de Esqueletos
+        const SKELETONS = {
+            WARRIOR: { id: 'WARRIOR', color: '#cbd5e1', glow: '#38bdf8', r: 12, hp: 1.0, dmg: 1.0, spd: 3.0, type: 'melee' },
+            ARCHER:  { id: 'ARCHER',  color: '#c084fc', glow: '#a855f7', r: 11, hp: 0.8, dmg: 1.2, spd: 2.7, type: 'ranged' },
+            MAGE:    { id: 'MAGE',    color: '#f472b6', glow: '#ec4899', r: 11, hp: 0.7, dmg: 1.6, spd: 2.4, type: 'magic' },
+            BERSERK: { id: 'BERSERK', color: '#f87171', glow: '#ef4444', r: 13, hp: 0.9, dmg: 2.2, spd: 3.8, type: 'melee' }
+        };
+
+        let minions = [], enemies = [], corpses = [], projectiles = [], particles = [];
+        let currentStage = 1, stageProgress = 0, bossActive = false, currentBoss = null;
+
+        // Campanha Expandida (15 Fases)
+        const STAGES = [
+            { id: 1, title: 'FASE 1: OS PORTÕES DE ELDORIA', kills: 15 },
+            { id: 2, title: 'FASE 2: DISTRITO DOS NOBRES', kills: 22 },
+            { id: 3, title: 'FASE 3: A GUARNIÇÃO', kills: 28, boss: 'Capitão da Guarda' },
+            { id: 4, title: 'FASE 4: AS CATACUMBAS IMPERIAIS', kills: 35 },
+            { id: 5, title: 'FASE 5: A PONTE DOS LAMENTOS', kills: 40, boss: 'Arquimago Ignis' },
+            { id: 6, title: 'FASE 6: O PÁTIO DA EXECUÇÃO', kills: 45 },
+            { id: 7, title: 'FASE 7: SANTUÁRIO DA LUZ', kills: 50, boss: 'Sir Valerius' },
+            { id: 8, title: 'FASE 8: CORREDORES DE MÁRMORE', kills: 55 },
+            { id: 9, title: 'FASE 9: JARDINS DE CINZAS', kills: 60 },
+            { id: 10, title: 'FASE 10: PORTÕES DO ABISMO', kills: 65, boss: 'Guardião do Abismo' },
+            { id: 11, title: 'FASE 11: A FORJA DE ALMAS', kills: 70 },
+            { id: 12, title: 'FASE 12: TORRE DA ALVORADA', kills: 75 },
+            { id: 13, title: 'FASE 13: O CÉU EM CHAMAS', kills: 80, boss: 'Dragão Purificador' },
+            { id: 14, title: 'FASE 14: O LIMBO', kills: 90 },
+            { id: 15, title: 'FASE 15: O TRONO DE ELDORIA', kills: 100, boss: 'O Imperador da Luz' }
+        ];
+
+        const keys = {}, mouse = { x: 0, y: 0 };
+        window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+        window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+        canvas.addEventListener('mousemove', e => { mouse.x = e.clientX - canvas.getBoundingClientRect().left; mouse.y = e.clientY - canvas.getBoundingClientRect().top; });
+
+        // Magias
+        function castProj() {
+            if (player.cd1 > 0) return;
+            player.cd1 = 15;
+            let dx = mouse.x - player.x, dy = mouse.y - player.y, dist = Math.hypot(dx, dy) || 1;
+            projectiles.push({ x: player.x, y: player.y, vx: (dx/dist)*10, vy: (dy/dist)*10, r: 6 + skills.sk1.level, dmg: player.damage + (skills.sk1.level*15), isPlayer: true, color: '#60a5fa', life: 70, type: 'normal' });
+        }
+        function castNova() {
+            if (player.cd2 > 0) return;
+            player.cd2 = 180;
+            let radius = 140 + skills.sk2.level * 20;
+            let dmg = player.damage * 2.5 + skills.sk2.level * 20;
+            createParticles(player.x, player.y, '#818cf8', 50);
+            enemies.forEach(e => {
+                if (Math.hypot(e.x - player.x, e.y - player.y) < radius) {
+                    e.hp -= dmg;
+                    let angle = Math.atan2(e.y - player.y, e.x - player.x);
+                    e.x += Math.cos(angle) * 50; e.y += Math.sin(angle) * 50;
+                }
+            });
+        }
+        function castDrain() {
+            if (player.cd3 > 0) return;
+            player.cd3 = 360;
+            let heal = 20 + skills.sk3.level * 15;
+            enemies.forEach(e => {
+                if (Math.hypot(e.x - player.x, e.y - player.y) < 200) {
+                    e.hp -= player.damage * 1.5;
+                    player.hp = Math.min(player.maxHp, player.hp + heal);
+                    createParticles(e.x, e.y, '#2dd4bf', 10);
+                }
+            });
+            updateHUD();
+        }
+
+        // Invocação Tática (1 por 1)
+        function castSummon(classKey) {
+            if (player.sumCd > 0 || corpses.length === 0 || minions.length >= player.maxMinions) return;
+            
+            // Check Unlock
+            if (classKey === 'ARCHER' && skills.summon.level < 2) return;
+            if (classKey === 'MAGE' && skills.summon.level < 3) return;
+            if (classKey === 'BERSERK' && skills.summon.level < 4) return;
+
+            player.sumCd = 10; // Cooldown global curtíssimo para invocar rápido
+            
+            // Pega o corpo mais próximo do player
+            corpses.sort((a,b) => Math.hypot(player.x - a.x, player.y - a.y) - Math.hypot(player.x - b.x, player.y - b.y));
+            let c = corpses.shift(); 
+            let cData = SKELETONS[classKey];
+            let bHp = (60 + currentStage * 10) * cData.hp;
+
+            minions.push({
+                x: c.x, y: c.y, classData: cData, r: cData.r, speed: cData.spd, hp: bHp, maxHp: bHp, damage: (15 + currentStage * 3) * cData.dmg, cd: 0
+            });
+            createParticles(c.x, c.y, cData.glow, 15);
+            updateHUD();
+        }
+
+        // Teclas
+        window.addEventListener('keydown', e => {
+            if (gameState !== STATE.PLAYING) return;
+            if (e.key === '1') castProj();
+            if (e.key === '2') castNova();
+            if (e.key === '3') castDrain();
+            if (e.key === '4') castSummon('WARRIOR');
+            if (e.key === '5') castSummon('ARCHER');
+            if (e.key === '6') castSummon('MAGE');
+            if (e.key === '7') castSummon('BERSERK');
+        });
+
+        // Eventos Botões UI
+        document.getElementById('btn-sk1').onclick = castProj;
+        document.getElementById('btn-sk2').onclick = castNova;
+        document.getElementById('btn-sk3').onclick = castDrain;
+        document.getElementById('btn-sum4').onclick = () => castSummon('WARRIOR');
+        document.getElementById('btn-sum5').onclick = () => castSummon('ARCHER');
+        document.getElementById('btn-sum6').onclick = () => castSummon('MAGE');
+        document.getElementById('btn-sum7').onclick = () => castSummon('BERSERK');
+
+        function createParticles(x, y, color, count) {
+            for (let i=0; i<count; i++) {
+                particles.push({
+                    x: x, y: y, vx: (Math.random()-0.5)*6, vy: (Math.random()-0.5)*6, r: Math.random()*3+1, color: color, alpha: 1, life: Math.random()*20+15
+                });
+            }
+        }
+
+        function spawnEnemy() {
+            if (bossActive) return;
+            let x = Math.random() < 0.5 ? (Math.random() < 0.5 ? -20 : canvas.width+20) : Math.random() * canvas.width;
+            let y = (x < 0 || x > canvas.width) ? Math.random() * canvas.height : (Math.random() < 0.5 ? -20 : canvas.height+20);
+            
+            let bHp = 40 + Math.pow(currentStage, 1.4) * 15;
+            let enemy = { x: x, y: y, r: 14, speed: 1.8 + currentStage*0.08, hp: bHp, maxHp: bHp, damage: 8 + currentStage*3, color: '#f87171', type: 'guard', cd: 0 };
+            
+            let rand = Math.random();
+            if (currentStage >= 4 && rand > 0.6) { enemy.type = 'archer'; enemy.color = '#c084fc'; enemy.hp *= 0.8; enemy.speed = 1.6; }
+            else if (currentStage >= 8 && rand > 0.4) { enemy.type = 'knight'; enemy.color = '#fbbf24'; enemy.hp *= 2.5; enemy.speed = 1.2; enemy.r = 18; }
+
+            enemies.push(enemy);
+        }
+
+        function spawnBoss(name) {
+            bossActive = true;
+            document.getElementById('boss-hp-container').classList.remove('hidden');
+            document.getElementById('boss-name').innerText = name.toUpperCase();
+            let bHp = 600 * currentStage;
+            currentBoss = { x: canvas.width/2, y: 50, r: 35, speed: 1.5, hp: bHp, maxHp: bHp, damage: 25 + currentStage*5, name: name, color: '#ef4444', cd: 0, phase: 1 };
+            enemies.push(currentBoss);
+        }
+
+        function triggerBanner(title) {
+            const b = document.getElementById('stage-banner');
+            document.getElementById('banner-title').innerText = title;
+            b.classList.remove('hidden', 'stage-banner-anim');
+            void b.offsetWidth; b.classList.add('stage-banner-anim');
+            setTimeout(() => b.classList.add('hidden'), 3500);
+        }
+
+        function updateGame() {
+            if (gameState !== STATE.PLAYING) return;
+
+            if(player.cd1>0) player.cd1--; if(player.cd2>0) player.cd2--; if(player.cd3>0) player.cd3--; if(player.sumCd>0) player.sumCd--;
+            
+            // UI Cooldowns
+            ['1','2','3'].forEach(id => {
+                let cd = player['cd'+id];
+                let el = document.getElementById('cd-'+id);
+                if(cd > 0) { el.classList.remove('hidden'); el.innerText = (cd/60).toFixed(1); } else el.classList.add('hidden');
+            });
+            let sumEl = document.getElementById('cd-sum');
+            if(player.sumCd > 0) sumEl.classList.remove('hidden'); else sumEl.classList.add('hidden');
+
+            // Mover Player
+            let mx = 0, my = 0;
+            if(keys['w']||keys['arrowup']) my -= 1; if(keys['s']||keys['arrowdown']) my += 1;
+            if(keys['a']||keys['arrowleft']) mx -= 1; if(keys['d']||keys['arrowright']) mx += 1;
+            let l = Math.hypot(mx, my);
+            if(l > 0) { player.x += (mx/l)*player.speed; player.y += (my/l)*player.speed; }
+            player.x = Math.max(player.radius, Math.min(canvas.width-player.radius, player.x));
+            player.y = Math.max(player.radius, Math.min(canvas.height-player.radius, player.y));
+
+            // Minions
+            minions.forEach((m, i) => {
+                let target = null, dist = Infinity;
+                enemies.forEach(e => { let d = Math.hypot(e.x-m.x, e.y-m.y); if(d<dist) { dist=d; target=e; } });
+                
+                if (target) {
+                    let ang = Math.atan2(target.y-m.y, target.x-m.x);
+                    if (m.classData.type === 'melee') {
+                        m.x += Math.cos(ang)*m.speed; m.y += Math.sin(ang)*m.speed;
+                        if(dist < m.r + target.r) { target.hp -= m.damage*0.05; m.hp -= target.damage*0.02; }
+                    } else {
+                        if(dist > 180) { m.x += Math.cos(ang)*m.speed; m.y += Math.sin(ang)*m.speed; }
+                        else if(dist < 100) { m.x -= Math.cos(ang)*m.speed; m.y -= Math.sin(ang)*m.speed; }
+                        
+                        m.cd++;
+                        if (m.cd > (m.classData.id === 'MAGE' ? 100 : 70)) {
+                            m.cd = 0;
+                            let pColor = m.classData.id === 'MAGE' ? '#f472b6' : '#c084fc';
+                            let pRad = m.classData.id === 'MAGE' ? 7 : 4;
+                            projectiles.push({ x: m.x, y: m.y, vx: Math.cos(ang)*7, vy: Math.sin(ang)*7, r: pRad, dmg: m.damage, isPlayer: true, color: pColor, life: 80, type: m.classData.id === 'MAGE' ? 'splash' : 'normal' });
+                        }
+                    }
+                } else {
+                    let d = Math.hypot(player.x-m.x, player.y-m.y);
+                    if(d > 60) { let a = Math.atan2(player.y-m.y, player.x-m.x); m.x += Math.cos(a)*m.speed; m.y += Math.sin(a)*m.speed; }
+                }
+                if(m.hp <= 0) { createParticles(m.x, m.y, m.classData.glow, 8); minions.splice(i, 1); updateHUD(); }
+            });
+
+            // Inimigos
+            enemies.forEach((e, i) => {
+                let target = player, tDist = Math.hypot(player.x-e.x, player.y-e.y);
+                minions.forEach(m => { let d = Math.hypot(m.x-e.x, m.y-e.y); if(d < tDist) { tDist = d; target = m; } });
+                let ang = Math.atan2(target.y-e.y, target.x-e.x);
+
+                if (e.type === 'archer') {
+                    if(tDist > 200) { e.x += Math.cos(ang)*e.speed; e.y += Math.sin(ang)*e.speed; }
+                    e.cd++; if(e.cd > 120) { e.cd=0; projectiles.push({ x: e.x, y: e.y, vx: Math.cos(ang)*5, vy: Math.sin(ang)*5, r: 5, dmg: e.damage, isPlayer: false, color: '#c084fc', life: 90 }); }
+                } else if (e === currentBoss) {
+                    if(tDist > 100) { e.x += Math.cos(ang)*e.speed; e.y += Math.sin(ang)*e.speed; }
+                    e.cd++;
+                    if(e.hp < e.maxHp*0.5 && e.phase === 1) { e.phase = 2; e.speed *= 1.3; createParticles(e.x, e.y, '#ef4444', 40); }
+                    let rate = e.phase === 2 ? 60 : 90;
+                    if(e.cd > rate) {
+                        e.cd = 0;
+                        for(let a=0; a<Math.PI*2; a+=Math.PI/(e.phase===2?6:4)) {
+                            projectiles.push({ x: e.x, y: e.y, vx: Math.cos(a)*5, vy: Math.sin(a)*5, r: 7, dmg: e.damage, isPlayer: false, color: '#ef4444', life: 100 });
+                        }
+                    }
+                    if(document.getElementById('boss-hp-container').classList.contains('hidden') === false){
+                        document.getElementById('boss-hp-text').innerText = `${Math.ceil(e.hp)}/${e.maxHp}`;
+                        document.getElementById('boss-hp-bar').style.width = `${Math.max(0, (e.hp/e.maxHp)*100)}%`;
+                    }
+                } else {
+                    e.x += Math.cos(ang)*e.speed; e.y += Math.sin(ang)*e.speed;
+                }
+
+                if(target === player && tDist < e.r + player.radius) { player.hp -= e.damage*0.04; updateHUD(); if(player.hp<=0) endGame(false); }
+
+                if (e.hp <= 0) {
+                    createParticles(e.x, e.y, e.color, 15);
+                    corpses.push({x: e.x, y: e.y});
+                    if(e === currentBoss) { bossActive = false; currentBoss = null; document.getElementById('boss-hp-container').classList.add('hidden'); nextStage(); }
+                    enemies.splice(i, 1);
+                    player.souls += 5 + currentStage*2; player.kills++; stageProgress++; updateHUD();
+                    
+                    if(!bossActive && stageProgress >= STAGES[currentStage-1].kills) {
+                        if(STAGES[currentStage-1].boss) spawnBoss(STAGES[currentStage-1].boss);
+                        else nextStage();
+                    }
+                }
+            });
+
+            if (enemies.length < 8 + currentStage*2 && Math.random() < 0.03 && !bossActive) spawnEnemy();
+
+            // Projéteis
+            projectiles.forEach((p, i) => {
+                p.x += p.vx; p.y += p.vy; p.life--;
+                if(p.isPlayer) {
+                    enemies.forEach(e => {
+                        if(Math.hypot(e.x-p.x, e.y-p.y) < e.r + p.r) {
+                            e.hp -= p.dmg; p.life = 0; createParticles(p.x, p.y, p.color, 5);
+                            if(p.type === 'splash') {
+                                enemies.forEach(e2 => { if(Math.hypot(e2.x-p.x, e2.y-p.y) < 80) e2.hp -= p.dmg*0.5; });
+                                createParticles(p.x, p.y, '#f472b6', 15);
+                            }
+                        }
+                    });
+                } else {
+                    if(Math.hypot(player.x-p.x, player.y-p.y) < player.radius + p.r) { player.hp -= p.dmg; p.life = 0; updateHUD(); if(player.hp<=0) endGame(false); }
+                }
+                if(p.life <= 0) projectiles.splice(i, 1);
+            });
+
+            particles.forEach((pt, i) => { pt.x += pt.vx; pt.y += pt.vy; pt.alpha -= 0.03; if(pt.alpha<=0) particles.splice(i, 1); });
+        }
+
+        function render() {
+            ctx.fillStyle = '#030712'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'rgba(30, 58, 138, 0.1)'; ctx.lineWidth = 1;
+            for(let i=0; i<canvas.width; i+=60) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
+            for(let i=0; i<canvas.height; i+=60) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
+
+            corpses.forEach(c => { ctx.fillStyle = '#334155'; ctx.beginPath(); ctx.arc(c.x, c.y, 8, 0, Math.PI*2); ctx.fill(); });
+            
+            particles.forEach(pt => { ctx.globalAlpha = Math.max(0, pt.alpha); ctx.fillStyle = pt.color; ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1; });
+
+            minions.forEach(m => {
+                ctx.shadowColor = m.classData.glow; ctx.shadowBlur = 10; ctx.fillStyle = m.classData.color;
+                ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+            });
+
+            enemies.forEach(e => {
+                ctx.fillStyle = e.color; ctx.beginPath(); ctx.arc(e.x, e.y, e.r, 0, Math.PI*2); ctx.fill();
+                if(e !== currentBoss) { ctx.fillStyle = '#ef4444'; ctx.fillRect(e.x-10, e.y-e.r-6, Math.max(0, (e.hp/e.maxHp)*20), 3); }
+            });
+
+            projectiles.forEach(p => { ctx.shadowColor = p.color; ctx.shadowBlur = 8; ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0; });
+
+            if(gameState === STATE.PLAYING) {
+                ctx.shadowColor = '#3b82f6'; ctx.shadowBlur = 15; ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(player.x, player.y, player.radius, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 2; ctx.stroke(); ctx.shadowBlur = 0;
+            }
+        }
+
+        function nextStage() {
+            currentStage++; stageProgress = 0;
+            if(currentStage > STAGES.length) return endGame(true);
+            triggerBanner(STAGES[currentStage-1].title);
+            player.hp = Math.min(player.maxHp, player.hp + 50);
+            updateHUD();
+        }
+
+        function updateHUD() {
+            document.getElementById('hud-hp-text').innerText = `${Math.ceil(player.hp)}/${player.maxHp}`;
+            document.getElementById('hud-hp-bar').style.width = `${Math.max(0, (player.hp/player.maxHp)*100)}%`;
+            document.getElementById('hud-souls-count').innerText = player.souls;
+            document.getElementById('hud-minion-count').innerText = `${minions.length}/${player.maxMinions}`;
+            document.getElementById('hud-stage-title').innerText = STAGES[currentStage-1].title;
+            document.getElementById('hud-stage-progress').style.width = `${Math.min(100, (stageProgress/STAGES[currentStage-1].kills)*100)}%`;
+
+            // Status Menu Updates
+            document.getElementById('status-souls').innerText = player.souls;
+            document.getElementById('status-army-cap').innerText = player.maxMinions;
+            document.getElementById('status-kills').innerText = player.kills;
+
+            // Updates Custos e Níveis
+            document.getElementById('st-sk1-lvl').innerText = `Lvl ${skills.sk1.level}`; document.getElementById('cost-sk1').innerText = skills.sk1.cost;
+            document.getElementById('st-sk2-lvl').innerText = `Lvl ${skills.sk2.level}`; document.getElementById('cost-sk2').innerText = skills.sk2.cost;
+            document.getElementById('st-sk3-lvl').innerText = `Lvl ${skills.sk3.level}`; document.getElementById('cost-sk3').innerText = skills.sk3.cost;
+            document.getElementById('st-sk-summon-lvl').innerText = `Lvl ${skills.summon.level}`; document.getElementById('cost-summon').innerText = skills.summon.cost;
+            document.getElementById('cost-hp').innerText = costHp; document.getElementById('cost-army').innerText = costArmy;
+
+            // Desbloqueios visuais nas Habilidades UI
+            if(skills.summon.level >= 2) { document.getElementById('btn-sum5').classList.remove('locked-skill'); document.getElementById('badge-archer').className = 'bg-slate-900 p-1.5 rounded border border-slate-800 text-slate-300'; document.getElementById('badge-archer').innerText = '🏹 Arqueiro (Desbloqueado)'; }
+            if(skills.summon.level >= 3) { document.getElementById('btn-sum6').classList.remove('locked-skill'); document.getElementById('badge-mage').className = 'bg-slate-900 p-1.5 rounded border border-slate-800 text-slate-300'; document.getElementById('badge-mage').innerText = '🧙 Mago (Desbloqueado)'; }
+            if(skills.summon.level >= 4) { document.getElementById('btn-sum7').classList.remove('locked-skill'); document.getElementById('badge-berserk').className = 'bg-slate-900 p-1.5 rounded border border-slate-800 text-slate-300'; document.getElementById('badge-berserk').innerText = '🪓 Berserker (Desbloqueado)'; }
+        }
+
+        // Upgrades Lógica
+        document.getElementById('upg-sk1').onclick = () => { if(player.souls>=skills.sk1.cost) { player.souls-=skills.sk1.cost; skills.sk1.level++; skills.sk1.cost=Math.floor(skills.sk1.cost*1.6); updateHUD(); }};
+        document.getElementById('upg-sk2').onclick = () => { if(player.souls>=skills.sk2.cost) { player.souls-=skills.sk2.cost; skills.sk2.level++; skills.sk2.cost=Math.floor(skills.sk2.cost*1.6); updateHUD(); }};
+        document.getElementById('upg-sk3').onclick = () => { if(player.souls>=skills.sk3.cost) { player.souls-=skills.sk3.cost; skills.sk3.level++; skills.sk3.cost=Math.floor(skills.sk3.cost*1.6); updateHUD(); }};
+        document.getElementById('upg-hp').onclick = () => { if(player.souls>=costHp) { player.souls-=costHp; player.maxHp+=50; player.hp+=50; costHp=Math.floor(costHp*1.5); updateHUD(); }};
+        document.getElementById('upg-army').onclick = () => { if(player.souls>=costArmy) { player.souls-=costArmy; player.maxMinions+=2; costArmy=Math.floor(costArmy*1.6); updateHUD(); }};
+        
+        // Upgrade de Invocação (Desbloqueia as Classes 5, 6 e 7)
+        document.getElementById('upg-summon').onclick = () => { 
+            if(player.souls>=skills.summon.cost && skills.summon.level < 4) { 
+                player.souls-=skills.summon.cost; skills.summon.level++; 
+                skills.summon.cost = Math.floor(skills.summon.cost*1.8); updateHUD(); 
+            }
+        };
+
+        function initGame() {
+            player = { x: canvas.width/2, y: canvas.height/2, radius: 16, speed: 3.8, hp: 100, maxHp: 100, damage: 25, maxMinions: 5, cd1: 0, cd2: 0, cd3: 0, sumCd: 0, souls: 0, kills: 0 };
+            skills = { sk1: {level: 1, cost: 15}, sk2: {level: 1, cost: 25}, sk3: {level: 1, cost: 30}, summon: {level: 1, cost: 25} };
+            costHp = 20; costArmy = 25;
+            minions = []; enemies = []; corpses = []; projectiles = []; particles = []; currentStage = 1; stageProgress = 0; bossActive = false;
+            
+            // Trava os botões novamente se for restart
+            document.getElementById('btn-sum5').classList.add('locked-skill');
+            document.getElementById('btn-sum6').classList.add('locked-skill');
+            document.getElementById('btn-sum7').classList.add('locked-skill');
+
+            document.getElementById('start-screen').classList.add('opacity-0', 'pointer-events-none');
+            document.getElementById('end-modal').classList.add('hidden');
+            document.getElementById('game-hud').classList.remove('hidden');
+            triggerBanner(STAGES[0].title);
+            gameState = STATE.PLAYING; updateHUD();
+        }
+
+        function endGame(win) {
+            gameState = STATE.END;
+            document.getElementById('end-title').innerText = win ? 'O IMPÉRIO CAIU' : 'VOCÊ FOI DERROTADO';
+            document.getElementById('end-title').className = win ? 'font-cinzel text-4xl font-bold text-blue-500 mb-2' : 'font-cinzel text-4xl font-bold text-red-500 mb-2';
+            document.getElementById('end-desc').innerText = win ? `Você reivindicou o trono e abatia ${player.kills} inimigos.` : `Os falsos heróis venceram. Kills: ${player.kills}`;
+            document.getElementById('end-modal').classList.remove('hidden');
+        }
+
+        document.getElementById('btn-start').onclick = initGame;
+        document.getElementById('btn-restart').onclick = initGame;
+        document.getElementById('btn-open-status').onclick = () => { gameState = STATE.PAUSED; document.getElementById('status-modal').classList.remove('hidden'); updateHUD(); };
+        document.getElementById('btn-close-status').onclick = () => { document.getElementById('status-modal').classList.add('hidden'); gameState = STATE.PLAYING; };
+
+        function loop() { updateGame(); render(); requestAnimationFrame(loop); }
+        window.onload = () => { resizeCanvas(); requestAnimationFrame(loop); };
+    </script>
+</body>
+</html>
